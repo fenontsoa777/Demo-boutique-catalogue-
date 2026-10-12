@@ -1,1 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catalogue Boutique</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 pb-24">
+  <header class="bg-white shadow p-4 sticky top-0 z-10 flex justify-between items-center">
+    <h1 class="font-bold text-lg">Boutique Demo</h1>
+    <span id="cart-count" class="bg-green-600 text-white px-3 py-1 rounded-full text-sm">0 article</span>
+  </header>
+  
+  <main id="product-grid" class="p-4 grid grid-cols-2 gap-4 max-w-lg mx-auto">
+    <p class="col-span-2 text-center text-gray-500 py-8">Chargement du catalogue...</p>
+  </main>
 
+  <div id="cart-bar" class="fixed bottom-0 left-0 right-0 bg-white border-t p-4 flex justify-between items-center max-w-lg mx-auto shadow-lg z-20">
+    <span id="cart-total" class="font-bold text-base">Total: 0 Ar</span>
+    <button onclick="checkoutWhatsApp()" class="bg-green-600 text-white px-5 py-2 rounded-lg font-medium text-sm">Commander via WhatsApp</button>
+  </div>
+
+  <script>
+    // REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+    const API_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
+    // REPLACE THIS WITH YOUR WHATSAPP PHONE NUMBER (e.g., 261340000000)
+    const WHATSAPP_PHONE = "261340000000";
+
+    let cart = [];
+    let products = [];
+
+    fetch(API_URL)
+      .then(res => res.json())
+      .then(data => {
+        products = data;
+        let grid = document.getElementById('product-grid');
+        if(!products.length) {
+          grid.innerHTML = `<p class="col-span-2 text-center text-gray-500">Aucun produit disponible.</p>`;
+          return;
+        }
+        grid.innerHTML = products.map((p, idx) => `
+          <div class="bg-white rounded-xl shadow p-3 flex flex-col justify-between">
+            <img src="${p.image_url || 'https://via.placeholder.com/150'}" class="h-32 object-cover rounded-lg mb-2" alt="${p.name}">
+            <h2 class="font-semibold text-sm line-clamp-1">${p.name}</h2>
+            <p class="text-green-600 font-bold text-sm my-1">${Number(p.price).toLocaleString()} Ar</p>
+            <button onclick="addToCart(${idx})" class="bg-gray-900 text-white py-1.5 rounded text-xs font-medium w-full">+ Ajouter</button>
+          </div>
+        `).join('');
+      })
+      .catch(err => {
+        document.getElementById('product-grid').innerHTML = `<p class="col-span-2 text-center text-red-500">Erreur de chargement.</p>`;
+      });
+
+    function addToCart(index) {
+      cart.push(products[index]);
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      document.getElementById('cart-count').innerText = `${cart.length} articles`;
+      let total = cart.reduce((sum, item) => sum + Number(item.price), 0);
+      document.getElementById('cart-total').innerText = `Total: ${total.toLocaleString()} Ar`;
+    }
+
+    function checkoutWhatsApp() {
+      if (cart.length === 0) return alert("Votre panier est vide !");
+      let message = "Bonjour, je souhaite commander les articles suivants:%0A%0A";
+      let total = 0;
+      cart.forEach(item => {
+        message += `• ${item.name} (${Number(item.price).toLocaleString()} Ar)%0A`;
+        total += Number(item.price);
+      });
+      message += `%0A*Total:* ${total.toLocaleString()} Ar`;
+      
+      window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${message}`, '_blank');
+    }
+  </script>
+</body>
+</html>
